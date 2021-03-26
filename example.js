@@ -1,15 +1,14 @@
 const puppeteer = require("puppeteer");
-const readline = require("readline");
 const fs = require("fs");
+const domains = require("./domains.json");
+console.log("START");
 
-const readInterface = readline.createInterface({
-  input: fs.createReadStream("domains.txt"),
-  output: process.stdout,
-  console: false,
-});
-readInterface.on("line", function (line) {
-  console.log("New line >" + line);
-});
+const today = new Date();
+const options = { year: "numeric", month: "numeric", day: "numeric" };
+console.log(today.toLocaleDateString("fr-fr", options));
+
+const direcotryName = "res/" + today.toLocaleDateString("fr-fr", options) + "/";
+fs.mkdirSync(direcotryName, { recursive: true });
 
 (async () => {
   const browser = await puppeteer.launch();
@@ -19,8 +18,13 @@ readInterface.on("line", function (line) {
     height: 1080,
     deviceScaleFactor: 1,
   });
-  await page.goto("https://example.com");
-  await page.screenshot({ path: "example.png" });
-
+  for (const { domain } of domains) {
+    let filename = direcotryName + domain + ".png";
+    console.log("Running screenshot for " + domain);
+    await page.goto("https://" + domain);
+    await page.screenshot({ path: filename });
+    console.log("Screenshot saved in " + filename);
+  }
   await browser.close();
+  console.log("DONE");
 })();
