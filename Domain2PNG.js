@@ -98,35 +98,45 @@ const options = { year: "numeric", month: "numeric", day: "numeric" };
     deviceScaleFactor: 1,
   });
   let dirHistory = "";
+  let index = 0;
   for (const { domain } of domains) {
+    index = index + 1;
     let filename = tempDir + domain + ".png";
-    console.log("Running screenshot for " + domain);
-    await page.goto("https://" + domain);
-    await page.screenshot({ path: filename });
-    let currentHash = await fileHash(filename);
-    console.log("Checking history for " + filename);
-    if (Object.keys(history.length) == 1) {
-      dirHistory = "/notUpdated/";
-    } else {
-      let currentHistory = await readHistory();
-      dirHistory = await domainUpdatedOrNot(currentHistory, currentHash);
-    }
+    console.log("[" + index + "] Running screenshot for " + domain);
+    try {
+      await page.goto("https://" + domain);
+      await page.screenshot({ path: filename });
+      let currentHash = await fileHash(filename);
+      console.log("Checking history for " + filename);
+      if (Object.keys(history.length) == 1) {
+        dirHistory = "/notUpdated/";
+      } else {
+        let currentHistory = await readHistory();
+        dirHistory = await domainUpdatedOrNot(currentHistory, currentHash);
+      }
 
-    /**
-     * Use the date to add file in the right folder
-     * Local date string to FR version : yyyy/mm/dd
-     * Create the folder if not exists
-     */
-    const newDirecotryName =
-      "res/" + today.toLocaleDateString("fr-fr", options) + dirHistory;
-    fs.mkdirSync(newDirecotryName, { recursive: true });
-    const newFileName = newDirecotryName + domain + ".png";
-    await moveToAnotherFolder(filename, newFileName);
-    console.log("Saved in " + newFileName);
-    hashPNG.push({
-      domain: domain,
-      hash: currentHash,
-    });
+      /**
+       * Use the date to add file in the right folder
+       * Local date string to FR version : yyyy-mm-dd
+       * Create the folder if not exists
+       */
+      const newDirecotryName =
+        "res/" + today.toLocaleDateString("fr-fr", options) + dirHistory;
+      fs.mkdirSync(newDirecotryName, { recursive: true });
+      const newFileName = newDirecotryName + domain + ".png";
+      await moveToAnotherFolder(filename, newFileName);
+      console.log("Saved in " + newFileName);
+      hashPNG.push({
+        domain: domain,
+        hash: currentHash,
+      });
+    } catch (err) {
+      console.log("Error for " + domain + " > " + err);
+      hashPNG.push({
+        domain: domain,
+        hash: "ERROR",
+      });
+    }
   }
 
   await browser.close();
